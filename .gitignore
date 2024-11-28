@@ -1,0 +1,75 @@
+# Python bytecode files
+*.pyc
+*.pyo
+*.pyd
+__pycache__/
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+
+# Distribution / packaging
+.Python
+build/
+dist/
+*.egg-info/
+
+# pytest
+.cache
+
+# PyInstaller
+#  Typically generated files by pyinstaller
+*.spec
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# VS Code settings
+.vscode/
+
+# JetBrains IDE (PyCharm, etc.)
+.idea/
+
+# macOS Finder files
+.DS_Store
+
+# Windows Installer files
+Thumbs.db
+
+# Environments
+.env
+.env.*
+
+# Pyenv
+.python-version
+
+# Poetry
+poetry.lock
+*.toml
+
+# pipenv
+Pipfile.lock
+
+# Mypy
+.mypy_cache/
+
+# Pytest
+.cache/
+
+# Coverage reports
+.coverage
+.coverage.*
+
+# Sphinx documentation
+docs/_build/
+
+# Flask/Django logs
+*.log
+
+# SQLite database
+*.sqlite3
+
+note.md
+word.txt
