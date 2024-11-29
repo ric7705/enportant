@@ -3,6 +3,7 @@ import requests
 import json
 from translate import Translator
 from translate_llama import get_word_translation, get_sentence_translation
+import time
 
 
 def get_from_dictionary(word, mock=False):
@@ -158,8 +159,8 @@ def format_content(word_info):
             <div>
                 <div>{meaning['pos']}</div>
                 <div>{word_info['translations']['word_translation']}</div>
-                <div>定義: {meaning['definitions'][0]}</div>
-                <div>範例:</div>
+                <div>Definition: {meaning['definitions'][0]}</div>
+                <div>Examples:</div>
         '''
         
         for j, example in enumerate(meaning['examples'][:2]):
@@ -176,20 +177,54 @@ def format_content(word_info):
     return html
 
 
-word = "kind"
-word_info = get_word_info(word, mock=True)
+def process_words_from_file(filename):
+    start_time = time.time()
+    
+    try:
+        with open(filename, 'r', encoding='utf-8') as file:
+            words = [word.strip() for word in file.readlines() if word.strip()]
+    except FileNotFoundError:
+        print(f"file not found：{filename}")
+        return
+    
+    deck = Deck(2059400516, 'High Frequency 10000 Words')
+    
+    for i, word in enumerate(words, 1):
+        word_start_time = time.time()
+        try:
+            print(f"processing {i}/{len(words)}：{word}")
+            word_info = get_word_info(word, mock=False)
+            
+            if "error" in word_info:
+                print(f"processing {word} error：{word_info['error']}")
+                continue
+                
+            note = Note(
+                model=get_template(),
+                fields=[
+                    word,
+                    word_info['phonetic'],
+                    word_info['audio_url'],
+                    format_content(word_info)
+                ]
+            )
+            
+            deck.add_note(note)
+            word_time = time.time() - word_start_time
+            print(f"added：{word} (took {word_time:.2f} seconds)")
+            
+        except Exception as e:
+            print(f"processing {word} error：{str(e)}")
+            continue
+    
+    package = Package(deck)
+    package.write_to_file('high_frequency_10000_words.apkg')
+    
+    total_time = time.time() - start_time
+    print(f"Done! Anki deck file generated")
+    print(f"Total words processed: {len(words)}")
+    print(f"Total time: {total_time:.2f} seconds")
+    print(f"Average time per word: {total_time/len(words):.2f} seconds")
 
-deck = Deck(2059400516, 'High Frequency 10000 Words')
-note = Note(
-    model=get_template(),
-    fields=[
-        word,
-        word_info['phonetic'],
-        word_info['audio_url'],
-        format_content(word_info)
-    ]
-)
-
-deck.add_note(note)
-package = Package(deck)
-package.write_to_file('high_frequency_10000_words.apkg')
+if __name__ == "__main__":
+    process_words_from_file('word.txt')
