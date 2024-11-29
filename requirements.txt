@@ -1,2 +1,4 @@
 genanki
 requests
+translate
+ollama
