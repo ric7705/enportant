@@ -73,3 +73,6 @@ docs/_build/
 
 note.md
 word.txt
+
+# Anki deck files
+*.apkg
