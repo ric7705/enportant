@@ -2,3 +2,4 @@ genanki
 requests
 translate
 ollama
+gTTS
