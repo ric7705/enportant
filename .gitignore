@@ -76,3 +76,7 @@ word.txt
 
 # Anki deck files
 *.apkg
+
+# Audio files
+/audio/*
+!/audio/__init__.py
