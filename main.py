@@ -118,6 +118,7 @@ def get_word_audio(word: str, output_dir: str = "audio"):
         return audio_path
     except Exception as e:
         print(f"Error generating audio for {word}: {e}")
+        exit() # exit when hit rate limit
         return None
 
 
