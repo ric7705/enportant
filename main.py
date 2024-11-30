@@ -3,10 +3,12 @@ import requests
 import json
 from translate_llama import get_word_metadata
 import time
+from gtts import gTTS
+import os
 
 
 def get_audio_url(word, mock=False):
-    """只從 dictionary API 獲取音訊 URL"""
+    """Get audio URL from dictionary API only"""
     if mock:
         try:
             with open(f'mock/{word}.json', 'r', encoding='utf-8') as file:
@@ -26,19 +28,19 @@ def get_audio_url(word, mock=False):
 
 
 def get_word_info(word, mock=False):
-    """整合 LLaMA 資料和音訊 URL"""
-    # 從 LLaMA 獲取詞典資料
+    """Integrate LLaMA data and audio path"""
+    # Get dictionary data from LLaMA
     word_data = get_word_metadata(word)
     if "error" in word_data:
         return word_data
     
-    # 只從 API 獲取音訊 URL
-    audio_url = get_audio_url(word, mock)
+    # Use local audio file path
+    audio_path = f"[sound:{word}.mp3]"
     
     return {
         "word": word,
         "phonetic": word_data['phonetic'],
-        "audio_url": audio_url,
+        "audio_url": audio_path,  # Use local audio path
         "meanings": word_data['meanings']
     }
 
@@ -64,11 +66,7 @@ def get_template():
                 <div>
                     <div>
                         <div>{{Phonetic}}</div>
-                        {{#Audio}}
-                        <div>
-                            <audio controls src="{{Audio}}"></audio>
-                        </div>
-                        {{/Audio}}
+                        <div>{{Audio}}</div>
                     </div>
                     <div>{{Content}}</div>
                 </div>
@@ -106,6 +104,47 @@ def format_content(word_info):
     return html
 
 
+def get_word_audio(word: str, output_dir: str = "audio"):
+    """Generate audio file using Google TTS"""
+    try:
+        # Ensure output directory exists
+        os.makedirs(output_dir, exist_ok=True)
+        
+        # Generate audio file
+        tts = gTTS(word, lang='en')
+        audio_path = f"{output_dir}/{word}.mp3"
+        tts.save(audio_path)
+        
+        return audio_path
+    except Exception as e:
+        print(f"Error generating audio for {word}: {e}")
+        return None
+
+
+def download_all_audios(words):
+    """Download audio files for all words"""
+    print("Starting audio file downloads...")
+    
+    # Collect existing audio files
+    existing_audios = set()
+    if os.path.exists("audio"):
+        existing_audios = {
+            f.replace(".mp3", "") 
+            for f in os.listdir("audio") 
+            if f.endswith(".mp3")
+        }
+    
+    for i, word in enumerate(words, 1):
+        if word in existing_audios:
+            print(f"Skipping existing audio {i}/{len(words)}: {word}")
+            continue
+            
+        print(f"Downloading audio {i}/{len(words)}: {word}")
+        get_word_audio(word)
+    
+    print("Audio file downloads completed")
+
+
 def process_words_from_file(filename):
     start_time = time.time()
     
@@ -115,6 +154,9 @@ def process_words_from_file(filename):
     except FileNotFoundError:
         print(f"file not found：{filename}")
         return
+    
+    # Download all audio files first
+    download_all_audios(words)
     
     deck = Deck(2059400516, 'High Frequency 10000 Words')
     
@@ -133,7 +175,7 @@ def process_words_from_file(filename):
                 fields=[
                     word,
                     word_info['phonetic'],
-                    word_info['audio_url'],
+                    f'[sound:{word}.mp3]',  # Use Anki sound tag format
                     format_content(word_info)
                 ]
             )
@@ -146,7 +188,14 @@ def process_words_from_file(filename):
             print(f"processing {word} error：{str(e)}")
             continue
     
+    # Create package with audio files
     package = Package(deck)
+    # Add all audio files to package
+    for word in words:
+        audio_path = f"audio/{word}.mp3"
+        if os.path.exists(audio_path):
+            package.media_files.append(audio_path)
+    
     package.write_to_file('high_frequency_10000_words.apkg')
     
     total_time = time.time() - start_time
